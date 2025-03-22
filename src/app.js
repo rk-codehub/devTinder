@@ -3,16 +3,11 @@ const connectDB = require('./config/database');
 const app = express(); // IT CREATES AN APPLICATION OF EXPRESS JS
 const User = require("./models/user")
 
+app.use(express.json());
 app.post("/signup", async (req, res) => {
-    const userObj = {
-        firstName: "Ranjith",
-        lastName: "Kumar",
-        emailId: "ranjithkumar@gmail.com",
-        password: "ranjith@123",
-        age: 28,
-        gender: 'Male',
-    }
-    const user = new User(userObj);
+    // console.log(req.body)
+    // const userObj = req.body
+    const user = new User(req.body);
     try {
         // CREATING A NEW INSTANCE OF THE USER MODEL
         await user.save();
