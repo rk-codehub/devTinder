@@ -17,6 +17,30 @@ app.post("/signup", async (req, res) => {
     }
 })
 
+// GET USER BY EMAIL
+app.get("/user", async (req, res) => {
+    const email = req.body.emailId;
+    try {
+        const user = await User.findOne({}); //{ emailId: emailId }
+        if(!user.length) {
+            res.status(404).send("User not found")
+        }
+        res.send(user);
+    } catch (error) {
+        console.log("user: ", error);
+    }
+})
+
+// FEED API - GET /feed - GET ALL USERS FROM THE DATABASE
+app.get("/feed", async (req, res) => {
+    try {
+        const user = await User.find({});
+        res.send(user);
+    } catch (error) {
+        console.log("feed: ", error);
+    }
+})
+
 
 connectDB().then(() => {
     console.log("Database connection established...");
