@@ -1,7 +1,7 @@
 const express = require('express');
 const connectDB = require('./config/database');
 const app = express(); // IT CREATES AN APPLICATION OF EXPRESS JS
-const User = require("./models/user")
+const User = require("./models/user");
 
 app.use(express.json());
 app.post("/signup", async (req, res) => {
