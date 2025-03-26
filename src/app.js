@@ -2,81 +2,67 @@ const express = require('express');
 const connectDB = require('./config/database');
 const app = express(); // IT CREATES AN APPLICATION OF EXPRESS JS
 const User = require("./models/user");
+const { validateSignUpData } = require('./utils/validation')
+const bcrypt = require('bcrypt');
+const validator = require('validator');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
+const {userAuth} = require('./middlewares/auth');
 
 app.use(express.json());
+app.use(cookieParser());
 app.post("/signup", async (req, res) => {
-    // console.log(req.body)
-    // const userObj = req.body
-    const user = new User(req.body);
     try {
+    // VALIDATION OF DATA
+    validateSignUpData(req);
+    const { firstName, lastName, emailId, password } = req.body;
+    // ENCRYPT THE PASSWORD
+    const passwordHash = await bcrypt.hash(password, 10)
+    const user = new User({firstName, lastName, emailId, password: passwordHash});
         // CREATING A NEW INSTANCE OF THE USER MODEL
         await user.save();
         res.send("User Added successfully!");
     } catch (error) {
-        console.log(error);
-        res.status(400).send(error);
+        res.status(400).send("SIGNUP ERROR: " + error.message);
     }
 })
 
-// GET USER BY EMAIL
-app.get("/user", async (req, res) => {
-    const email = req.body.emailId;
+app.get('/login', async(req, res) => {
     try {
-        const user = await User.findOne({}); //{ emailId: emailId }
-        if(!user.length) {
-            res.status(404).send("User not found")
+        const { emailId, password } = req.body;
+        if(!validator.isEmail(emailId)) {
+            throw new Error('Invalid emailId');
         }
+        const user = await User.findOne({ emailId: emailId});
+        if(!user) {
+            throw new Error("Invalid Credentials")
+        }
+        const isPasswordValid = await User.bcryptPwd(password);
+        if(isPasswordValid) {
+            const token = await User.getJWT();
+            res.cookie('token', token, { expires: new Date(Date.now() + 60 * 1000), httpOnly: true });
+            res.send('Login credentials is correct');
+        } else {
+            throw new Error("Invalid Credentials");
+        }
+    } catch (error) {
+        res.status(400).send("LOGIN ERROR: " + error.message);
+    }
+})
+
+app.get('/profile',userAuth, async (req, res) => {
+    try {
+        const user = req.user;
         res.send(user);
     } catch (error) {
-        console.log("user: ", error);
+        res.status(400).send('profile error: ' + error);
     }
 })
 
-// FEED API - GET /feed - GET ALL USERS FROM THE DATABASE
-app.get("/feed", async (req, res) => {
-    try {
-        const user = await User.find({});
-        res.send(user);
-    } catch (error) {
-        console.log("feed: ", error);
-    }
-})
-
-// DELETE A USER
-app.delete('/user', async (req, res) => {
-    const id = req.body.userId;
-    try {
-        // const user = await User.findByIdAndDelete({ _id: id })
-        const user = await User.findByIdAndDelete(id)
-        res.send("User deleted successfully!!");
-    } catch (error) {
-        
-    }
-})
-
-
-// UPDATE DATA OF THE USER
-app.patch("/user/:userId" ,async (req, res) => {
-    const userId = req.params?.userId;
-    const data = req.body;
-
-    try {
-        const ALLOWED_UPDATES = ["photoUrl", "about", "skills", "gender", "age"
-        ];
-    
-        const isAllowBody = Object.keys(req.body).every(k => ALLOWED_UPDATES.includes(k));
-        if(!isAllowBody) {
-            throw new Error("Update Not allowed");
-        }
-        if(data?.skills.length > 10) {
-            throw new Error("Skills cannot be more than 10")
-        }
-        const user = await User.findByIdAndUpdate({ _id: userId }, data, { returnDocument: "before", runValidators: true });
-        console.log(user);
-        res.send("User Updated Successfully")
-    } catch (error) {
-        res.status(400).send(error)
-    }
+app.post('/sendConnectionRequest',userAuth, async(req, res) => {
+    // SENDING A CONNECTION REQUEST
+    console.log("SENDING A CONNECTION REQUEST");
+    res.send("SENDING A CONNECTION REQUEST");
 })
 
 
