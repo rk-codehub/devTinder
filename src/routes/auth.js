@@ -36,7 +36,7 @@ authRouter.post('/login', async(req, res) => {
         const isPasswordValid = await user.bcryptPwd(password);
         if(isPasswordValid) {
             const token = await user.getJWT();
-            res.cookie('token', token, { expires: new Date(Date.now() + 60 * 1000), httpOnly: true });
+            res.cookie('token', token, { expires: new Date(Date.now() + 60 * 60 * 1000), httpOnly: true });
             res.send('Login credentials is correct');
         } else {
             throw new Error("Invalid Credentials");
